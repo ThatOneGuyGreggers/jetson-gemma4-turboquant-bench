@@ -1,0 +1,6 @@
+.git/
+.venv/
+models/
+results.jsonl
+*.log
+__pycache__/

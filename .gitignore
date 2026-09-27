@@ -5,3 +5,4 @@ __pycache__/
 *.log
 .env
 results/runs/
+*/results.jsonl

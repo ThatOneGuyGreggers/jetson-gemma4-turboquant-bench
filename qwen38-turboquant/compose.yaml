@@ -1,0 +1,61 @@
+services:
+  qwen38-turboquant:
+    image: llama-cpp-turboquant-jetson:cuda-13.2
+    runtime: nvidia
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ./models:/models:ro
+    ports:
+      - 127.0.0.1:8083:8080
+    command:
+      - --model
+      - /models/Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp.gguf
+      - --alias
+      - qwen38-gsq-rco-iq3s-mtp
+      - --mmproj
+      - /models/mmproj-Qwen3.8-27B-BF16.gguf
+      - --spec-type
+      - draft-mtp
+      - --spec-draft-n-max
+      - "3"
+      - --cache-type-k
+      - q8_0
+      - --cache-type-v
+      - turbo4
+      - --flash-attn
+      - "on"
+      - --ctx-size
+      - ${CTX_SIZE:-65536}
+      - --n-gpu-layers
+      - all
+      - --parallel
+      - "1"
+      - --batch-size
+      - "1024"
+      - --ubatch-size
+      - "256"
+      - --threads
+      - "8"
+      - --threads-batch
+      - "8"
+      - --fit
+      - "off"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+    restart: "no"
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:8080/health]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 6m
+
+x-dockge:
+  urls:
+    - https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF
+    - https://github.com/TheTom/llama-cpp-turboquant

@@ -12,8 +12,8 @@ import zlib
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
-BASE = "http://127.0.0.1:8082"
+ROOT = Path(os.environ.get("BENCH_ROOT", Path(__file__).resolve().parent))
+BASE = os.environ.get("BENCH_BASE", "http://127.0.0.1:8082")
 RESULTS = ROOT / os.environ.get("BENCH_RESULTS", "results/runs/benchmark.jsonl")
 CONTEXTS = tuple(int(n) for n in os.environ.get("BENCH_CONTEXTS", "65536,98304,131072").split(","))
 MODEL = os.environ.get("BENCH_MODEL", "gemma-4-26b-turboquant")
@@ -85,7 +85,7 @@ def png_red_square():
 
 def test_vision():
     image = base64.b64encode(png_red_square()).decode()
-    response = request("/v1/chat/completions", {
+    payload = {
         "model": MODEL,
         "messages": [{"role": "user", "content": [
             {"type": "image_url", "image_url": {"url": "data:image/png;base64," + image}},
@@ -94,7 +94,10 @@ def test_vision():
         "max_tokens": 320,
         "temperature": 0,
         "stream": False,
-    }, 180)
+    }
+    if os.environ.get("BENCH_VISION_REASONING_EFFORT"):
+        payload["reasoning_effort"] = os.environ["BENCH_VISION_REASONING_EFFORT"]
+    response = request("/v1/chat/completions", payload, 180)
     return response["choices"][0]["message"].get("content", "")[:300]
 
 
@@ -106,7 +109,7 @@ def record(result):
 
 
 def main():
-    print(f"Model {MODEL}: Q8_0 K / Turbo4 V, Q4_0 MTP, F16 vision", flush=True)
+    print(os.environ.get("BENCH_CONFIG_LABEL", f"Model {MODEL}: Q8_0 K / Turbo4 V, Q4_0 MTP, F16 vision"), flush=True)
     for ctx in CONTEXTS:
         env = {**os.environ, "CTX_SIZE": str(ctx)}
         started = time.monotonic()
