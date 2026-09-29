@@ -1,0 +1,23 @@
+services:
+  spark:
+    image: llama-cpp-jetson-bench:cuda-13.2
+    runtime: nvidia
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ./models:/models:ro
+    ports:
+      - 127.0.0.1:8092:8080
+    command: ["--model", "/models/Spark-X2.5-4B-Q8_0.gguf", "--alias", "spark-x2.5-4b-q8_0", "--ctx-size", "${CTX_SIZE:-32768}", "--n-gpu-layers", "all", "--parallel", "1", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0", "--flash-attn", "on", "--batch-size", "512", "--ubatch-size", "128", "--threads", "8", "--fit", "off", "--jinja", "--host", "0.0.0.0", "--port", "8080"]
+    restart: "no"
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8080/health]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 6m
+x-dockge:
+  urls:
+    - https://huggingface.co/XHToken/Spark-X2.5-4B-GGUF
